@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZenScreen — Documentación</title>
+  <meta name="description" content="Documentación completa de ZenScreen: instalación, configuración, API WiFi y más." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --card-hover: #1f2235;
+      --accent: #4f8ef7;
+      --accent-dim: rgba(79, 142, 247, 0.12);
+      --accent-glow: rgba(79, 142, 247, 0.25);
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --border: rgba(255,255,255,0.07);
+      --code-bg: #0d1117;
+      --radius: 10px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15,17,23,0.9);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .nav-logo {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    .nav-logo:hover { text-decoration: none; }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-link {
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 7px;
+      transition: color 0.2s, background 0.2s;
+      text-decoration: none;
+    }
+    .nav-link:hover { color: var(--text); background: var(--card); text-decoration: none; }
+    .nav-badge {
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--accent-glow);
+    }
+
+    /* ── LAYOUT ── */
+    .docs-layout {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 58px);
+    }
+    @media (max-width: 900px) {
+      .docs-layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      position: sticky;
+      top: 58px;
+      height: calc(100vh - 58px);
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+      padding: 32px 0 32px 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .toc-group { margin-bottom: 8px; }
+    .toc-group-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 20px 4px;
+    }
+    .toc-link {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--muted);
+      padding: 5px 20px;
+      border-left: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+      text-decoration: none;
+      line-height: 1.4;
+    }
+    .toc-link:hover { color: var(--text); text-decoration: none; }
+    .toc-link.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: var(--accent-dim);
+    }
+    .toc-link.sub { padding-left: 32px; font-size: 0.78rem; }
+
+    /* ── MAIN CONTENT ── */
+    .docs-content {
+      padding: 48px 56px 80px;
+      max-width: 820px;
+    }
+    @media (max-width: 768px) { .docs-content { padding: 32px 20px 60px; } }
+
+    .docs-header {
+      margin-bottom: 48px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+    }
+    .docs-header .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-glow);
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+    .docs-header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+    .docs-header p {
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    /* ── CONTENT STYLES ── */
+    .docs-section {
+      margin-bottom: 56px;
+      scroll-margin-top: 80px;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      scroll-margin-top: 80px;
+    }
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      margin-top: 28px;
+      color: var(--text);
+      scroll-margin-top: 80px;
+    }
+    p {
+      color: #94a3b8;
+      margin-bottom: 14px;
+      line-height: 1.75;
+    }
+    ul, ol {
+      color: #94a3b8;
+      padding-left: 20px;
+      margin-bottom: 14px;
+    }
+    li { margin-bottom: 6px; line-height: 1.7; }
+    li strong { color: var(--text); }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82em;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 5px;
+      color: #a5c8f0;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    pre code {
+      font-size: 0.83rem;
+      background: none;
+      border: none;
+      padding: 0;
+      color: #cdd9e5;
+      line-height: 1.7;
+    }
+    .pre-label {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; margin-bottom: 20px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    thead tr {
+      background: var(--card);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    th {
+      text-align: left;
+      padding: 10px 16px;
+      font-weight: 600;
+      color: var(--text);
+      font-size: 0.8rem;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+    td {
+      padding: 10px 16px;
+      color: #94a3b8;
+      border-bottom: 1px solid var(--border);
+      line-height: 1.5;
+    }
+    td:first-child { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #a5c8f0; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* ── CALLOUTS ── */
+    .callout {
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      font-size: 0.88rem;
+      border-left: 3px solid;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .callout-icon { flex-shrink: 0; font-size: 1rem; margin-top: 1px; }
+    .callout p { margin: 0; font-size: 0.88rem; }
+    .callout.info { background: rgba(79,142,247,0.08); border-color: var(--accent); }
+    .callout.warn { background: rgba(245,158,11,0.08); border-color: #f59e0b; }
+    .callout.tip  { background: rgba(16,185,129,0.08); border-color: #10b981; }
+
+    /* ── FILE TREE ── */
+    .file-tree {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: #cdd9e5;
+      line-height: 1.8;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    .file-tree .dir { color: #79c0ff; }
+    .file-tree .file { color: #cdd9e5; }
+    .file-tree .comment { color: var(--muted); }
+
+    /* ── CHANGELOG ── */
+    .changelog-entry {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .changelog-version {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .version-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--accent-glow);
+    }
+    .version-date { font-size: 0.8rem; color: var(--muted); }
+    .changelog-entry ul { margin: 0; }
+    .changelog-entry li { font-size: 0.88rem; }
+
+    /* ── STEPS ── */
+    .step-list { list-style: none; padding: 0; counter-reset: steps; }
+    .step-list li {
+      counter-increment: steps;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    .step-list li::before {
+      content: counter(steps);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 26px;
+      height: 26px;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-glow);
+      color: var(--accent);
+      border-radius: 50%;
+      font-size: 0.72rem;
+      font-weight: 700;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 24px;
+      text-align: center;
+    }
+    .footer-text { font-size: 0.82rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">ZenScreen</a>
+    <div class="nav-right">
+      <span class="nav-badge">v1.1.0</span>
+      <a href="index.html" class="nav-link">← Inicio</a>
+      <a href="https://github.com/sevillawil8/zenscreen" class="nav-link" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<!-- LAYOUT -->
+<div class="docs-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="toc-group">
+      <div class="toc-group-label">Introducción</div>
+      <a href="#introduccion" class="toc-link">Introducción</a>
+      <a href="#caracteristicas" class="toc-link">Características</a>
+      <a href="#formatos" class="toc-link">Formatos</a>
+      <a href="#requisitos" class="toc-link">Requisitos</a>
+    </div>
+    <div class="toc-group">
+      <div class="toc-group-label">Instalación</div>
+      <a href="#instalacion" class="toc-link">Instalación</a>
+      <a href="#apk-directo" class="toc-link sub">A: APK directo</a>
+      <a href="#compilar" class="toc-link sub">B: Compilar</a>
+    </div>
+    <div class="toc-group">
+      <div class="toc-group-label">Uso</div>
+      <a href="#configuracion-inicial" class="toc-link">Configuración inicial</a>
+      <a href="#subir-archivos" class="toc-link">Subir archivos</a>
+      <a href="#navegacion-tactil" class="toc-link">Navegación táctil</a>
+    </div>
+    <div class="toc-group">
+      <div class="toc-group-label">Administración</div>
+      <a href="#panel-admin" class="toc-link">Panel admin</a>
+      <a href="#wifi-dashboard" class="toc-link">WiFi Dashboard</a>
+      <a href="#config-avanzada" class="toc-link">Config. avanzada</a>
+      <a href="#modo-kiosk" class="toc-link">Modo kiosk</a>
+    </div>
+    <div class="toc-group">
+      <div class="toc-group-label">Referencia</div>
+      <a href="#arquitectura" class="toc-link">Arquitectura</a>
+      <a href="#api" class="toc-link">API WiFi</a>
+      <a href="#solucion-problemas" class="toc-link">Solución de problemas</a>
+      <a href="#tech-stack" class="toc-link">Tech stack</a>
+    </div>
+    <div class="toc-group">
+      <div class="toc-group-label">Versiones</div>
+      <a href="#changelog" class="toc-link">Changelog</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="docs-content">
+
+    <div class="docs-header">
+      <div class="badge">Documentación</div>
+      <h1>ZenScreen</h1>
+      <p>Kiosk multimedia para tabletas Android — PDFs, imágenes y videos en bucle continuo, con servidor WiFi integrado, panel admin oculto y arranque automático.</p>
+    </div>
+
+    <!-- INTRO -->
+    <div class="docs-section" id="introduccion">
+      <h2>Introducción</h2>
+      <p>ZenScreen convierte cualquier tableta Android (8.0+) en un kiosk multimedia profesional. Pensado para recepciones, salas de espera, stands en ferias y exhibiciones donde se necesita mostrar contenido de forma continua y desatendida.</p>
+      <p>La app no requiere root. El modo kiosk se logra a través del sistema de launcher de Android, bloqueando el botón Atrás por accesibilidad y ocultando las barras del sistema.</p>
+      <div class="callout info">
+        <span class="callout-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+        <p>El acceso al panel de administración se realiza mediante un toque largo en la esquina superior derecha — invisible para visitantes.</p>
+      </div>
+    </div>
+
+    <!-- CARACTERISTICAS -->
+    <div class="docs-section" id="caracteristicas">
+      <h2>Características</h2>
+      <ul>
+        <li><strong>Slideshow continuo:</strong> PDFs, imágenes y videos en bucle infinito sin intervención del usuario.</li>
+        <li><strong>Servidor WiFi integrado:</strong> Sube y gestiona archivos desde cualquier browser en la misma red local.</li>
+        <li><strong>Modo kiosk:</strong> Bloquea el botón Atrás, oculta barras del sistema, actúa como launcher.</li>
+        <li><strong>Orden configurable:</strong> Arrastra para reordenar el playlist desde la app o desde el dashboard WiFi.</li>
+        <li><strong>Panel admin oculto:</strong> Acceso mediante PIN con toque largo en esquina superior derecha.</li>
+        <li><strong>Arranque automático:</strong> Se inicia solo al encender la tablet, sin intervención manual.</li>
+        <li><strong>Orientación configurable:</strong> Retrato, paisaje o automático según necesidad.</li>
+        <li><strong>Sin root:</strong> No requiere permisos de superusuario.</li>
+      </ul>
+    </div>
+
+    <!-- FORMATOS -->
+    <div class="docs-section" id="formatos">
+      <h2>Formatos soportados</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Tipo</th><th>Formatos</th><th>Notas</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Documentos</td><td style="font-family:inherit;color:inherit;">PDF</td><td>Renderizado página a página, un frame por página</td></tr>
+            <tr><td>Imágenes</td><td style="font-family:inherit;color:inherit;">JPG, PNG, WebP, GIF, BMP</td><td>GIF animado reproducido en bucle</td></tr>
+            <tr><td>Video</td><td style="font-family:inherit;color:inherit;">MP4, MKV, MOV, AVI, WebM, 3GP</td><td>Decodificación hardware vía MediaCodec</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- REQUISITOS -->
+    <div class="docs-section" id="requisitos">
+      <h2>Requisitos</h2>
+      <ul>
+        <li><strong>Android 8.0</strong> (API 26) o superior</li>
+        <li>Red WiFi local (para el servidor de archivos)</li>
+        <li>Tableta recomendada: al menos 2 GB RAM, almacenamiento interno o microSD disponible</li>
+        <li>Para compilar: Android Studio Hedgehog o superior, JDK 17+</li>
+      </ul>
+    </div>
+
+    <!-- INSTALACION -->
+    <div class="docs-section" id="instalacion">
+      <h2>Instalación</h2>
+
+      <h3 id="apk-directo">A: APK directo (recomendado)</h3>
+      <ol class="step-list">
+        <li>Descarga el APK desde la <a href="https://github.com/sevillawil8/zenscreen/releases" target="_blank">página de releases en GitHub</a>.</li>
+        <li>En la tablet, activa <strong>Ajustes → Seguridad → Instalar apps desconocidas</strong> y habilita tu browser o gestor de archivos.</li>
+        <li>Abre el APK descargado y confirma la instalación.</li>
+        <li>Pulsa el botón Home para que Android pregunte qué launcher usar — selecciona <strong>ZenScreen</strong> y elige <em>Siempre</em>.</li>
+      </ol>
+
+      <h3 id="compilar">B: Compilar desde el código fuente</h3>
+      <pre><code class="language-bash">git clone https://github.com/sevillawil8/zenscreen.git
+cd zenscreen
+./gradlew assembleRelease</code></pre>
+      <p>El APK generado estará en <code>app/build/outputs/apk/release/app-release.apk</code>. Instálalo con <code>adb install</code> o cópialo a la tablet.</p>
+      <pre><code class="language-bash">adb install app/build/outputs/apk/release/app-release.apk</code></pre>
+    </div>
+
+    <!-- CONFIGURACION INICIAL -->
+    <div class="docs-section" id="configuracion-inicial">
+      <h2>Configuración inicial</h2>
+      <ol class="step-list">
+        <li><strong>Establece ZenScreen como launcher:</strong> Al pulsar Home por primera vez, Android pregunta qué app usar. Selecciona ZenScreen y elige <em>Siempre</em>. También puedes configurarlo en Ajustes → Apps → App por defecto → Launcher.</li>
+        <li><strong>Concede permisos:</strong> La app solicitará acceso a almacenamiento para leer archivos, y permiso de arrancar al inicio. Acepta ambos.</li>
+        <li><strong>Establece el PIN de admin:</strong> En la primera apertura del panel admin (toque largo en esquina superior derecha), se te pedirá crear un PIN de 4 dígitos. Guárdalo en un lugar seguro.</li>
+      </ol>
+      <div class="callout warn">
+        <span class="callout-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+        <p>Si olvidas el PIN, tendrás que desinstalar y reinstalar la aplicación. No hay mecanismo de recuperación para proteger el modo kiosk.</p>
+      </div>
+    </div>
+
+    <!-- SUBIR ARCHIVOS -->
+    <div class="docs-section" id="subir-archivos">
+      <h2>Subir archivos</h2>
+
+      <h3>Vía WiFi (recomendado)</h3>
+      <ol class="step-list">
+        <li>Asegúrate de que la tablet y tu PC están conectados a la misma red WiFi.</li>
+        <li>Abre el panel admin (toque largo, esquina superior derecha → PIN).</li>
+        <li>Activa el servidor WiFi. La app mostrará una URL como <code>http://192.168.1.xx:8080</code>.</li>
+        <li>Abre esa URL en el browser de tu PC.</li>
+        <li>Arrastra archivos al área de drop o usa el botón de selección. La subida es inmediata.</li>
+      </ol>
+
+      <h3>Vía USB / transferencia directa</h3>
+      <p>También puedes copiar archivos directamente a la carpeta interna de ZenScreen usando un cable USB y un gestor de archivos. La ruta por defecto es:</p>
+      <pre><code>/sdcard/ZenScreen/media/</code></pre>
+      <p>Los archivos copiados se detectan automáticamente al reiniciar el slideshow o al entrar al panel admin.</p>
+    </div>
+
+    <!-- NAVEGACION TACTIL -->
+    <div class="docs-section" id="navegacion-tactil">
+      <h2>Navegación táctil</h2>
+      <p>Durante el slideshow, el usuario puede navegar manualmente tocando la pantalla:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Zona de toque</th><th>Acción</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Mitad izquierda</td><td>← Diapositiva anterior</td></tr>
+            <tr><td>Mitad derecha</td><td>→ Diapositiva siguiente</td></tr>
+            <tr><td>Esquina superior derecha (toque largo)</td><td>Abre el panel admin</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout tip">
+        <span class="callout-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <p>Los toques de navegación son completamente transparentes para el público. Solo el toque largo en la esquina activa el panel oculto.</p>
+      </div>
+    </div>
+
+    <!-- PANEL ADMIN -->
+    <div class="docs-section" id="panel-admin">
+      <h2>Panel admin</h2>
+
+      <h3>Cómo abrirlo</h3>
+      <ol class="step-list">
+        <li>Mantén pulsada la <strong>esquina superior derecha</strong> de la pantalla durante ~1.5 segundos.</li>
+        <li>Aparece un diálogo de PIN. Introduce el PIN de 4 dígitos.</li>
+        <li>El panel se despliega con todas las opciones disponibles.</li>
+      </ol>
+
+      <h3>Opciones disponibles</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Opción</th><th>Descripción</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Servidor WiFi</td><td>Activa/desactiva el servidor HTTP en el puerto 8080</td></tr>
+            <tr><td>Intervalo de slide</td><td>Tiempo en segundos entre diapositivas (3–60 s)</td></tr>
+            <tr><td>Orientación</td><td>Retrato, paisaje o automático</td></tr>
+            <tr><td>Reordenar playlist</td><td>Interfaz drag-and-drop para reordenar archivos</td></tr>
+            <tr><td>Eliminar archivos</td><td>Selección múltiple con confirmación</td></tr>
+            <tr><td>Cambiar PIN</td><td>Modifica el PIN de acceso admin</td></tr>
+            <tr><td>Reiniciar slideshow</td><td>Vuelve al primer elemento del playlist</td></tr>
+            <tr><td>Salir del launcher</td><td>Devuelve temporalmente el control al sistema</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Gestión de archivos</h3>
+      <p>Desde el panel admin puedes ver todos los archivos cargados, reordenarlos arrastrando, y eliminar los que ya no necesites. Los cambios se aplican inmediatamente al slideshow activo.</p>
+    </div>
+
+    <!-- WIFI DASHBOARD -->
+    <div class="docs-section" id="wifi-dashboard">
+      <h2>WiFi Dashboard</h2>
+      <p>Cuando el servidor WiFi está activo, abre <code>http://[IP-de-la-tablet]:8080</code> en cualquier browser de tu red local. El dashboard ofrece:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Función</th><th>Descripción</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Subir archivos</td><td>Drag and drop o selección múltiple, progreso en tiempo real</td></tr>
+            <tr><td>Ver playlist</td><td>Lista de archivos cargados con nombre, tamaño y tipo</td></tr>
+            <tr><td>Reordenar</td><td>Drag-and-drop en el browser para cambiar el orden</td></tr>
+            <tr><td>Eliminar</td><td>Botón de papelera por archivo con confirmación</td></tr>
+            <tr><td>Descargar</td><td>Descarga individual de archivos al PC</td></tr>
+            <tr><td>Previsualizar</td><td>Vista previa de imágenes y primera página de PDFs</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout info">
+        <span class="callout-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg></span>
+        <p>El servidor solo es accesible desde la red local (LAN). No expone ningún puerto a Internet.</p>
+      </div>
+    </div>
+
+    <!-- CONFIG AVANZADA -->
+    <div class="docs-section" id="config-avanzada">
+      <h2>Configuración avanzada</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Parámetro</th><th>Valores</th><th>Por defecto</th><th>Descripción</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>slide_interval</td><td>3–60</td><td>5</td><td>Segundos entre diapositivas</td></tr>
+            <tr><td>orientation</td><td>portrait / landscape / auto</td><td>auto</td><td>Orientación de pantalla</td></tr>
+            <tr><td>server_port</td><td>1024–65535</td><td>8080</td><td>Puerto del servidor HTTP</td></tr>
+            <tr><td>loop_mode</td><td>true / false</td><td>true</td><td>Repetir playlist al terminar</td></tr>
+            <tr><td>show_clock</td><td>true / false</td><td>false</td><td>Mostrar reloj en pantalla</td></tr>
+            <tr><td>transition</td><td>fade / slide / none</td><td>fade</td><td>Transición entre diapositivas</td></tr>
+            <tr><td>video_muted</td><td>true / false</td><td>true</td><td>Videos sin audio por defecto</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MODO KIOSK -->
+    <div class="docs-section" id="modo-kiosk">
+      <h2>Modo kiosk</h2>
+      <p>ZenScreen implementa el modo kiosk mediante una combinación de técnicas que no requieren root:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Técnica</th><th>Efecto</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Launcher por defecto</td><td>ZenScreen se lanza al pulsar Home</td></tr>
+            <tr><td>Servicio de accesibilidad</td><td>Intercepta y anula el botón Atrás</td></tr>
+            <tr><td>Immersive mode</td><td>Oculta barra de estado y navegación</td></tr>
+            <tr><td>BOOT_COMPLETED receiver</td><td>Arranque automático al encender la tablet</td></tr>
+            <tr><td>FLAG_KEEP_SCREEN_ON</td><td>Evita que la pantalla se apague</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout warn">
+        <span class="callout-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+        <p>Para salir del modo kiosk sin el PIN, tendrás que usar ADB: <code>adb shell am start -n com.android.settings/.Settings</code></p>
+      </div>
+    </div>
+
+    <!-- ARQUITECTURA -->
+    <div class="docs-section" id="arquitectura">
+      <h2>Arquitectura</h2>
+
+      <h3>Estructura de archivos</h3>
+      <div class="file-tree">
+<span class="dir">zenscreen/</span>
+├── <span class="dir">app/src/main/</span>
+│   ├── <span class="dir">java/com/zenscreen/</span>
+│   │   ├── <span class="file">MainActivity.kt</span>           <span class="comment"># Launcher principal, slideshow</span>
+│   │   ├── <span class="file">AdminActivity.kt</span>          <span class="comment"># Panel admin con PIN</span>
+│   │   ├── <span class="file">WifiServerService.kt</span>      <span class="comment"># Servidor HTTP (NanoHTTPD)</span>
+│   │   ├── <span class="file">BootReceiver.kt</span>           <span class="comment"># Arranque automático</span>
+│   │   ├── <span class="file">KioskAccessibility.kt</span>     <span class="comment"># Bloqueo botón Atrás</span>
+│   │   ├── <span class="file">MediaManager.kt</span>           <span class="comment"># Gestión del playlist</span>
+│   │   └── <span class="file">PdfRenderer.kt</span>            <span class="comment"># Renderizado de PDFs</span>
+│   ├── <span class="dir">res/</span>
+│   │   ├── <span class="dir">layout/</span>                   <span class="comment"># XML layouts</span>
+│   │   └── <span class="dir">raw/</span>                      <span class="comment"># Assets del servidor web</span>
+│   └── <span class="file">AndroidManifest.xml</span>
+├── <span class="file">build.gradle.kts</span>
+└── <span class="file">README.md</span>
+      </div>
+
+      <h3>Flujo de arranque</h3>
+      <pre><code>BOOT_COMPLETED
+    └─→ BootReceiver
+           └─→ MainActivity (launcher)
+                  ├─→ MediaManager.loadPlaylist()
+                  ├─→ SlideshowEngine.start()
+                  └─→ WifiServerService.start() [si estaba activo]</code></pre>
+    </div>
+
+    <!-- API -->
+    <div class="docs-section" id="api">
+      <h2>API WiFi</h2>
+      <p>El servidor HTTP expone una API REST simple. Todos los endpoints responden con JSON.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Método</th><th>Endpoint</th><th>Descripción</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>GET</td><td>/api/files</td><td>Lista de todos los archivos en el playlist</td></tr>
+            <tr><td>POST</td><td>/api/upload</td><td>Sube uno o más archivos (multipart/form-data)</td></tr>
+            <tr><td>DELETE</td><td>/api/files/:name</td><td>Elimina un archivo por nombre</td></tr>
+            <tr><td>POST</td><td>/api/reorder</td><td>Reordena el playlist (body: array de nombres)</td></tr>
+            <tr><td>GET</td><td>/api/status</td><td>Estado del servidor y configuración actual</td></tr>
+            <tr><td>GET</td><td>/</td><td>Dashboard HTML</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Ejemplo: listar archivos</h3>
+      <pre><code class="language-bash">curl http://192.168.1.100:8080/api/files</code></pre>
+      <pre><code class="language-json">{
+  "files": [
+    { "name": "bienvenida.jpg", "size": 204800, "type": "image" },
+    { "name": "catalogo.pdf",   "size": 1048576, "type": "pdf"   },
+    { "name": "promo.mp4",      "size": 8388608, "type": "video" }
+  ],
+  "count": 3
+}</code></pre>
+    </div>
+
+    <!-- SOLUCION DE PROBLEMAS -->
+    <div class="docs-section" id="solucion-problemas">
+      <h2>Solución de problemas</h2>
+
+      <h3>La app no arranca al encender</h3>
+      <p>Verifica que el permiso <strong>Iniciar al arrancar</strong> esté concedido en Ajustes → Apps → ZenScreen → Permisos. En algunos fabricantes (Xiaomi, Huawei) hay un ajuste adicional de "autoarranque" en la configuración de batería.</p>
+
+      <h3>El botón Atrás no está bloqueado</h3>
+      <p>El servicio de accesibilidad debe estar activo. Ve a Ajustes → Accesibilidad → ZenScreen Kiosk y actívalo.</p>
+
+      <h3>No aparece la IP del servidor WiFi</h3>
+      <p>Asegúrate de que la tablet está conectada a una red WiFi (no solo a datos móviles). El servidor solo funciona en red local. Si cambias de red, reinicia el servidor desde el panel admin.</p>
+
+      <h3>Los PDFs no se muestran correctamente</h3>
+      <p>ZenScreen usa el PdfRenderer nativo de Android, que requiere PDFs con fuentes embebidas. PDFs generados con libreoffice o Adobe Acrobat suelen funcionar bien. PDFs escaneados sin OCR pueden mostrarse en blanco.</p>
+
+      <h3>Los videos se traban o no reproducen</h3>
+      <p>Verifica que el codec del video sea compatible con el hardware de la tablet. MP4 con H.264 tiene la mayor compatibilidad. Para MKV con H.265, la tablet necesita soporte de decodificación hardware.</p>
+
+      <h3>Olvidé el PIN de admin</h3>
+      <p>Desinstala y reinstala la aplicación. Los archivos subidos se conservan en <code>/sdcard/ZenScreen/media/</code> y estarán disponibles al volver a instalar.</p>
+
+      <h3>No puedo instalar el APK</h3>
+      <p>Activa <strong>Fuentes desconocidas</strong> en Ajustes → Seguridad. En Android 8+, debes habilitarlo específicamente para el app desde la que vas a instalar (browser, gestor de archivos).</p>
+    </div>
+
+    <!-- TECH STACK -->
+    <div class="docs-section" id="tech-stack">
+      <h2>Tech stack</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Tecnología</th><th>Versión</th><th>Uso</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Kotlin</td><td>1.9+</td><td>Lenguaje principal</td></tr>
+            <tr><td>Android SDK</td><td>API 26–34</td><td>Target y min SDK</td></tr>
+            <tr><td>NanoHTTPD</td><td>2.3.1</td><td>Servidor HTTP embebido</td></tr>
+            <tr><td>AndroidX PdfRenderer</td><td>—</td><td>Renderizado nativo de PDFs</td></tr>
+            <tr><td>ExoPlayer / Media3</td><td>1.2+</td><td>Reproducción de video</td></tr>
+            <tr><td>Glide</td><td>4.16+</td><td>Carga y caché de imágenes</td></tr>
+            <tr><td>Coroutines</td><td>1.7+</td><td>Operaciones asíncronas</td></tr>
+            <tr><td>DataStore</td><td>1.0+</td><td>Persistencia de preferencias</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CHANGELOG -->
+    <div class="docs-section" id="changelog">
+      <h2>Changelog</h2>
+      <p>ZenScreen sigue <a href="https://semver.org/" target="_blank">Semantic Versioning</a>: <code>MAJOR.MINOR.PATCH</code>. Los cambios breaking incrementan MAJOR, nuevas funciones compatibles incrementan MINOR, y correcciones de bugs incrementan PATCH.</p>
+
+      <div class="changelog-entry">
+        <div class="changelog-version">
+          <span class="version-tag">v1.1.0</span>
+          <span class="version-date">2025</span>
+        </div>
+        <ul>
+          <li>Nuevo: Soporte para formato WebP animado</li>
+          <li>Nuevo: Transición <em>slide</em> entre diapositivas además de fade</li>
+          <li>Nuevo: Opción para mostrar reloj en pantalla (oculto por defecto)</li>
+          <li>Nuevo: Descarga de archivos individuales desde el dashboard WiFi</li>
+          <li>Mejora: Rendimiento mejorado en tablets con 2 GB RAM</li>
+          <li>Mejora: El servidor WiFi ahora muestra previsualización de imágenes</li>
+          <li>Corrección: Los PDFs con fuentes no embebidas ya no causan crash</li>
+          <li>Corrección: El arranque automático falla en algunos dispositivos Xiaomi MIUI 14</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-version">
+          <span class="version-tag">v1.0.0</span>
+          <span class="version-date">2024</span>
+        </div>
+        <ul>
+          <li>Lanzamiento inicial</li>
+          <li>Slideshow de PDFs, imágenes (JPG, PNG, GIF, BMP) y videos (MP4, MKV, MOV, AVI, WebM, 3GP)</li>
+          <li>Servidor WiFi con dashboard web para subir y gestionar archivos</li>
+          <li>Panel admin oculto con PIN mediante toque largo</li>
+          <li>Modo kiosk: bloqueo del botón Atrás y modo inmersivo</li>
+          <li>Arranque automático al encender la tablet (BOOT_COMPLETED)</li>
+          <li>Orientación configurable: retrato, paisaje o automático</li>
+          <li>Reordenación del playlist mediante drag-and-drop</li>
+        </ul>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-text">
+    <strong>ZenScreen</strong> · MIT License · v1.1.0 ·
+    <a href="https://github.com/sevillawil8/zenscreen" target="_blank" rel="noopener">GitHub</a>
+    &nbsp;·&nbsp;
+    <a href="index.html">Inicio</a>
+  </div>
+</footer>
+
+<script>
+  // Highlight active TOC link on scroll
+  const sections = document.querySelectorAll('.docs-section, h2, h3');
+  const tocLinks = document.querySelectorAll('.toc-link');
+
+  const sectionMap = {};
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').replace('#', '');
+    sectionMap[id] = link;
+  });
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && sectionMap[entry.target.id]) {
+        tocLinks.forEach(l => l.classList.remove('active'));
+        sectionMap[entry.target.id].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -80% 0px' });
+
+  document.querySelectorAll('[id]').forEach(el => {
+    if (sectionMap[el.id]) observer.observe(el);
+  });
+</script>
+</body>
+</html>

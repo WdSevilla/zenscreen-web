@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZenScreen — Kiosk multimedia para tabletas Android</title>
+  <meta name="description" content="Exhibe PDFs, imágenes y videos en bucle continuo. Servidor WiFi integrado, panel admin oculto y arranque automático." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080a10;
+      --bg2: #0c0e16;
+      --card: #111420;
+      --card-hover: #161928;
+      --accent: #4f8ef7;
+      --accent2: #7c5cf7;
+      --accent-dim: rgba(79,142,247,0.12);
+      --accent-glow: rgba(79,142,247,0.25);
+      --text: #eef2ff;
+      --muted: #5a6585;
+      --muted2: #8892b0;
+      --border: rgba(255,255,255,0.06);
+      --border2: rgba(255,255,255,0.1);
+      --radius: 16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: .4;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      padding: 0 32px;
+    }
+    .nav-inner {
+      max-width: 1160px;
+      margin: 16px auto 0;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      background: rgba(8,10,16,0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border2);
+      border-radius: 14px;
+      padding: 0 20px;
+    }
+    .nav-logo {
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-logo-mark {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .nav-links a {
+      color: var(--muted2);
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .btn-github {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.07) !important;
+      border: 1px solid var(--border2) !important;
+      color: var(--text) !important;
+      padding: 6px 14px !important;
+      border-radius: 8px !important;
+      font-size: 0.8rem !important;
+      font-weight: 600 !important;
+      transition: background 0.2s, border-color 0.2s !important;
+      white-space: nowrap;
+    }
+    .btn-github:hover { background: rgba(255,255,255,0.12) !important; border-color: var(--border2) !important; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 120px 32px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Gradient blobs */
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: -200px; left: 50%; transform: translateX(-50%);
+      width: 900px; height: 600px;
+      background: radial-gradient(ellipse at 30% 50%, rgba(79,142,247,0.15) 0%, transparent 60%),
+                  radial-gradient(ellipse at 70% 40%, rgba(124,92,247,0.1) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Grid lines */
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hero-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+      width: 100%;
+    }
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 60px; }
+      .hero-visual { order: -1; }
+    }
+
+    .hero-text {}
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(79,142,247,0.1);
+      border: 1px solid rgba(79,142,247,0.2);
+      color: #93bbfd;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 5px 12px;
+      border-radius: 999px;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+    }
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #4f8ef7;
+      box-shadow: 0 0 6px #4f8ef7;
+      animation: glow-pulse 2s ease-in-out infinite;
+    }
+    @keyframes glow-pulse {
+      0%,100% { opacity: 1; box-shadow: 0 0 6px #4f8ef7; }
+      50% { opacity: 0.5; box-shadow: 0 0 2px #4f8ef7; }
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 4.5vw, 3.8rem);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+    .h1-line1 { color: var(--text); }
+    .h1-line2 {
+      background: linear-gradient(90deg, #4f8ef7 0%, #7c5cf7 50%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 1.05rem;
+      color: var(--muted2);
+      max-width: 440px;
+      margin-bottom: 36px;
+      line-height: 1.75;
+      font-weight: 400;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 48px;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #4f8ef7, #6a73f7);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 13px 26px;
+      border-radius: 11px;
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+      box-shadow: 0 4px 20px rgba(79,142,247,0.35), 0 0 0 1px rgba(255,255,255,0.1) inset;
+      letter-spacing: -0.01em;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(79,142,247,0.5), 0 0 0 1px rgba(255,255,255,0.15) inset;
+    }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 13px 26px;
+      border-radius: 11px;
+      border: 1px solid var(--border2);
+      transition: transform 0.2s, background 0.2s, border-color 0.2s;
+      letter-spacing: -0.01em;
+    }
+    .btn-outline:hover {
+      transform: translateY(-2px);
+      background: rgba(255,255,255,0.09);
+      border-color: rgba(255,255,255,0.18);
+    }
+
+    /* Hero stats */
+    .hero-stats {
+      display: flex;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+    .stat {
+      display: flex;
+      flex-direction: column;
+    }
+    .stat-val {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+    .stat-lbl {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .stat-sep {
+      width: 1px;
+      background: var(--border2);
+      align-self: stretch;
+    }
+
+    /* ── TABLET MOCKUP ── */
+    .hero-visual {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .device-wrap {
+      position: relative;
+      width: 340px;
+    }
+
+    /* Glow behind device */
+    .device-wrap::before {
+      content: '';
+      position: absolute;
+      inset: -40px;
+      background: radial-gradient(ellipse at center, rgba(79,142,247,0.15) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+      border-radius: 50%;
+    }
+
+    .device {
+      width: 340px;
+      background: #0d0f18;
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 24px;
+      padding: 14px 10px 18px;
+      box-shadow:
+        0 0 0 1px rgba(0,0,0,0.5),
+        0 40px 100px rgba(0,0,0,0.7),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+      position: relative;
+      z-index: 1;
+    }
+
+    .device-camera {
+      width: 8px; height: 8px;
+      background: #1a1d2a;
+      border-radius: 50%;
+      margin: 0 auto 10px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .device-screen {
+      background: #0a0c14;
+      border-radius: 14px;
+      overflow: hidden;
+      aspect-ratio: 4/3;
+      position: relative;
+    }
+
+    /* Screen top bar */
+    .screen-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 28px;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      z-index: 10;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .screen-bar-title {
+      font-size: 0.5rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+    }
+    .screen-bar-ip {
+      font-size: 0.45rem;
+      font-family: monospace;
+      color: #4f8ef7;
+      opacity: 0.7;
+    }
+
+    /* Slides */
+    .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 1s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .slide.active { opacity: 1; }
+
+    .slide-1 {
+      background:
+        linear-gradient(160deg, #0d2044 0%, #071428 100%);
+    }
+    .slide-2 {
+      background:
+        linear-gradient(160deg, #0d2a18 0%, #071a10 100%);
+    }
+    .slide-3 {
+      background:
+        linear-gradient(160deg, #1e0d35 0%, #120720 100%);
+    }
+
+    /* Fake content inside slides */
+    .slide-content {
+      width: 90%; height: 75%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 28px;
+    }
+
+    /* Slide 1 — image bars */
+    .img-bar { height: 8px; border-radius: 4px; background: rgba(79,142,247,0.2); }
+    .img-bar-1 { width: 100%; background: linear-gradient(90deg, rgba(79,142,247,0.4), rgba(124,92,247,0.4)); }
+    .img-bar-2 { width: 75%; }
+    .img-bar-3 { width: 55%; }
+    .img-hero-rect {
+      flex: 1;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(79,142,247,0.25), rgba(124,92,247,0.15));
+      border: 1px solid rgba(79,142,247,0.2);
+      margin-top: 4px;
+    }
+
+    /* Slide 2 — pdf lines */
+    .pdf-header {
+      height: 20px; border-radius: 4px;
+      background: rgba(255,255,255,0.08);
+      margin-bottom: 8px;
+    }
+    .pdf-line { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.06); margin-bottom: 5px; }
+    .pdf-line:nth-child(odd) { width: 90%; }
+    .pdf-line:nth-child(even) { width: 70%; }
+
+    /* Slide 3 — video player */
+    .video-thumb {
+      flex: 1;
+      border-radius: 8px;
+      background: rgba(124,92,247,0.15);
+      border: 1px solid rgba(124,92,247,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .play-btn {
+      width: 28px; height: 28px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Progress bar at bottom */
+    .slide-progress {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: rgba(255,255,255,0.05);
+    }
+    .slide-progress-bar {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 2.8s linear;
+    }
+    .slide-progress-bar.active { width: 100%; }
+
+    .slide-tag {
+      position: absolute;
+      bottom: 8px; left: 10px;
+      font-size: 0.42rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* Tap zones */
+    .tap-left, .tap-right {
+      position: absolute;
+      top: 28px; bottom: 0;
+      width: 50%;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      font-size: 0.45rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0);
+      transition: color 0.3s, background 0.3s;
+      padding: 0 8px;
+    }
+    .tap-left { left: 0; justify-content: flex-start; }
+    .tap-right { right: 0; justify-content: flex-end; }
+    .device-screen:hover .tap-left,
+    .device-screen:hover .tap-right {
+      color: rgba(255,255,255,0.2);
+    }
+    .device-screen:hover .tap-left { background: rgba(0,0,0,0.08); }
+    .device-screen:hover .tap-right { background: rgba(0,0,0,0.08); }
+
+    /* Dots */
+    .device-dots {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 10px;
+    }
+    .dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      transition: background 0.4s, transform 0.4s;
+    }
+    .dot.active {
+      background: var(--accent);
+      transform: scale(1.3);
+      box-shadow: 0 0 6px var(--accent);
+    }
+
+    /* ── SECTION BASE ── */
+    section { padding: 100px 32px; position: relative; z-index: 1; }
+    .section-inner { max-width: 1160px; margin: 0 auto; }
+    .section-eyebrow {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+    .section-sub {
+      color: var(--muted2);
+      font-size: 1rem;
+      max-width: 500px;
+      line-height: 1.75;
+      margin-bottom: 60px;
+    }
+
+    /* ── FEATURES ── */
+    #caracteristicas {
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    @media (max-width: 900px) { .features-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { .features-grid { grid-template-columns: 1fr; } }
+
+    .feature-card {
+      background: var(--card);
+      padding: 32px 28px;
+      transition: background 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(79,142,247,0), transparent);
+      transition: background 0.3s;
+    }
+    .feature-card:hover { background: var(--card-hover); }
+    .feature-card:hover::before {
+      background: linear-gradient(90deg, transparent, rgba(79,142,247,0.4), transparent);
+    }
+
+    .feature-icon-wrap {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(79,142,247,0.15);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 18px;
+    }
+    .feature-icon-wrap svg { color: var(--accent); }
+
+    .feature-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+    .feature-desc {
+      font-size: 0.84rem;
+      color: var(--muted2);
+      line-height: 1.7;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .steps {
+      display: grid;
+      grid-template-columns: 1fr 40px 1fr 40px 1fr;
+      align-items: start;
+      gap: 0;
+    }
+    @media (max-width: 700px) {
+      .steps { grid-template-columns: 1fr; gap: 16px; }
+      .step-connector { display: none; }
+    }
+
+    .step {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      position: relative;
+    }
+    .step-num {
+      width: 32px; height: 32px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(79,142,247,0.3);
+    }
+    .step-title { font-weight: 700; font-size: 1rem; margin-bottom: 8px; letter-spacing: -0.01em; }
+    .step-desc { font-size: 0.84rem; color: var(--muted2); line-height: 1.7; }
+    .step-connector {
+      display: flex; align-items: flex-start; justify-content: center;
+      padding-top: 48px;
+      color: var(--muted);
+    }
+
+    /* ── FORMATS ── */
+    #formatos {
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .formats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 700px) { .formats-grid { grid-template-columns: 1fr; } }
+
+    .format-block {
+      border-radius: 16px;
+      padding: 28px 24px;
+      border: 1px solid;
+      position: relative;
+      overflow: hidden;
+    }
+    .format-block::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      opacity: 0.08;
+    }
+    .format-block.doc {
+      background: rgba(79,142,247,0.06);
+      border-color: rgba(79,142,247,0.18);
+    }
+    .format-block.doc::before { background: #4f8ef7; }
+
+    .format-block.img {
+      background: rgba(34,197,94,0.05);
+      border-color: rgba(34,197,94,0.18);
+    }
+    .format-block.img::before { background: #22c55e; }
+
+    .format-block.vid {
+      background: rgba(124,92,247,0.06);
+      border-color: rgba(124,92,247,0.18);
+    }
+    .format-block.vid::before { background: #7c5cf7; }
+
+    .format-block-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px;
+    }
+    .doc .format-block-icon { background: rgba(79,142,247,0.15); color: #4f8ef7; }
+    .img .format-block-icon { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .vid .format-block-icon { background: rgba(124,92,247,0.15); color: #7c5cf7; }
+
+    .format-block-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .doc .format-block-title { color: #4f8ef7; }
+    .img .format-block-title { color: #22c55e; }
+    .vid .format-block-title { color: #7c5cf7; }
+
+    .format-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .format-pill {
+      border-radius: 8px;
+      padding: 5px 13px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      border: 1px solid;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .format-pill:hover { opacity: 0.75; transform: translateY(-1px); }
+    .doc .format-pill { background: rgba(79,142,247,0.1); border-color: rgba(79,142,247,0.25); color: #93bbfd; }
+    .img .format-pill { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.2); color: #86efac; }
+    .vid .format-pill { background: rgba(124,92,247,0.1); border-color: rgba(124,92,247,0.25); color: #c4b5fd; }
+
+    /* ── NAVIGATION ── */
+    .nav-demo {
+      max-width: 580px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .nav-demo-screen {
+      height: 100px;
+      display: flex;
+      background: #0a0c14;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    .nav-demo-half {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: background 0.25s, color 0.25s;
+      cursor: default;
+    }
+    .nav-demo-half:hover { background: rgba(79,142,247,0.06); color: var(--accent); }
+    .nav-demo-sep { width: 1px; background: var(--border); margin: 20px 0; }
+    .nav-demo-labels { display: flex; }
+    .nav-demo-label {
+      flex: 1;
+      text-align: center;
+      padding: 14px 20px;
+    }
+    .nav-demo-label + .nav-demo-label { border-left: 1px solid var(--border); }
+    .nav-demo-label strong { display: block; font-size: 0.85rem; color: var(--text); margin-bottom: 3px; }
+    .nav-demo-label span { font-size: 0.78rem; color: var(--muted2); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 32px;
+      position: relative;
+      z-index: 1;
+    }
+    .footer-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: -0.02em;
+    }
+    .footer-brand-mark {
+      width: 24px; height: 24px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 6px;
+    }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .footer-links a { transition: color 0.2s; }
+    .footer-links a:hover { color: var(--text); }
+    .footer-version {
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      nav { padding: 0 16px; }
+      section { padding: 72px 20px; }
+      .hero { padding: 100px 20px 60px; }
+      .hero-inner { gap: 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">
+      <div class="nav-logo-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </div>
+      ZenScreen
+    </a>
+    <div class="nav-links">
+      <a href="#caracteristicas">Características</a>
+      <a href="#como-funciona">Cómo funciona</a>
+      <a href="docs.html">Docs</a>
+      <a href="https://github.com/sevillawil8/zenscreen" target="_blank" rel="noopener" class="btn-github">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-inner">
+
+    <div class="hero-text">
+      <div class="badge">
+        <span class="badge-dot"></span>
+        Android 8.0+ &nbsp;·&nbsp; Kotlin &nbsp;·&nbsp; Open Source
+      </div>
+
+      <h1>
+        <span class="h1-line1">Kiosk multimedia<br>para tabletas</span><br>
+        <span class="h1-line2">Android</span>
+      </h1>
+
+      <p class="hero-sub">
+        Exhibe PDFs, imágenes y videos en bucle continuo. Servidor WiFi integrado, panel admin oculto y arranque automático — sin root ni configuración compleja.
+      </p>
+
+      <div class="hero-ctas">
+        <a href="https://github.com/sevillawil8/zenscreen/releases" class="btn-primary" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descargar APK
+        </a>
+        <a href="https://github.com/sevillawil8/zenscreen" class="btn-outline" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"/></svg>
+          Ver en GitHub
+        </a>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-val">12+</span>
+          <span class="stat-lbl">Formatos</span>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="stat">
+          <span class="stat-val">Android 8+</span>
+          <span class="stat-lbl">Compatibilidad</span>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="stat">
+          <span class="stat-val">Sin root</span>
+          <span class="stat-lbl">Instalación</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEVICE MOCKUP -->
+    <div class="hero-visual">
+      <div class="device-wrap">
+        <div class="device">
+          <div class="device-camera"></div>
+          <div class="device-screen" id="deviceScreen">
+
+            <div class="screen-bar">
+              <span class="screen-bar-title">ZenScreen</span>
+              <span class="screen-bar-ip">192.168.1.5:8080</span>
+            </div>
+
+            <!-- Slide 1: Image -->
+            <div class="slide slide-1 active" id="s0">
+              <div class="slide-content">
+                <div class="img-bar img-bar-1"></div>
+                <div class="img-bar img-bar-2"></div>
+                <div class="img-bar img-bar-3"></div>
+                <div class="img-hero-rect"></div>
+              </div>
+              <span class="slide-tag">Imagen · 1 de 3</span>
+            </div>
+
+            <!-- Slide 2: PDF -->
+            <div class="slide slide-2" id="s1">
+              <div class="slide-content">
+                <div class="pdf-header"></div>
+                <div class="pdf-line"></div>
+                <div class="pdf-line"></div>
+                <div class="pdf-line"></div>
+                <div class="pdf-line"></div>
+                <div class="pdf-line"></div>
+                <div class="pdf-line"></div>
+              </div>
+              <span class="slide-tag">PDF · Página 1</span>
+            </div>
+
+            <!-- Slide 3: Video -->
+            <div class="slide slide-3" id="s2">
+              <div class="slide-content">
+                <div class="video-thumb">
+                  <div class="play-btn">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+                  </div>
+                </div>
+              </div>
+              <span class="slide-tag">Video · 00:18</span>
+            </div>
+
+            <!-- Tap zones -->
+            <div class="tap-left">&#8592; ANTERIOR</div>
+            <div class="tap-right">SIGUIENTE &#8594;</div>
+
+            <!-- Progress -->
+            <div class="slide-progress">
+              <div class="slide-progress-bar active" id="prog"></div>
+            </div>
+          </div>
+
+          <div class="device-dots">
+            <div class="dot active" id="d0"></div>
+            <div class="dot" id="d1"></div>
+            <div class="dot" id="d2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="caracteristicas">
+  <div class="section-inner">
+    <p class="section-eyebrow">Características</p>
+    <h2 class="section-title">Todo lo que necesitas para tu kiosk</h2>
+    <p class="section-sub">Diseñado para recepciones, salas de espera y exhibiciones. Configuración en minutos, funcionamiento continuo.</p>
+
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <div class="feature-icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div class="feature-title">Slideshow continuo</div>
+        <p class="feature-desc">PDFs, imágenes y videos en bucle infinito sin intervención. Configura el intervalo y el orden a tu gusto desde la app.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+        </div>
+        <div class="feature-title">Servidor WiFi</div>
+        <p class="feature-desc">Sube, elimina y reordena archivos desde el browser de tu PC en la misma red. Sin cables, sin apps adicionales.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <div class="feature-title">Modo kiosk</div>
+        <p class="feature-desc">Bloquea el botón Atrás, oculta barras del sistema y actúa como launcher. La tablet queda completamente dedicada.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </div>
+        <div class="feature-title">Playlist ordenable</div>
+        <p class="feature-desc">Arrastra para reordenar el playlist desde la app o desde el dashboard web. El orden se sincroniza automáticamente.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        </div>
+        <div class="feature-title">Panel admin oculto</div>
+        <p class="feature-desc">Acceso con PIN mediante toque largo en la esquina superior derecha. Completamente invisible para el público.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </div>
+        <div class="feature-title">Arranque automático</div>
+        <p class="feature-desc">Se inicia solo al encender la tablet, sin intervención manual. Ideal para instalaciones desatendidas 24/7.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="como-funciona">
+  <div class="section-inner">
+    <p class="section-eyebrow">Cómo funciona</p>
+    <h2 class="section-title">En tres pasos</h2>
+    <p class="section-sub">De la instalación al kiosk funcionando en minutos.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">Instala en la tablet</div>
+        <p class="step-desc">Descarga el APK, instálalo y establece ZenScreen como launcher por defecto. No se requiere root ni configuración especial del sistema.</p>
+      </div>
+
+      <div class="step-connector">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">Sube tu contenido</div>
+        <p class="step-desc">Conecta PC y tablet a la misma red WiFi, abre la URL del servidor en el browser y arrastra tus archivos. PDFs, imágenes y video.</p>
+      </div>
+
+      <div class="step-connector">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Listo</div>
+        <p class="step-desc">La tablet muestra tu contenido en bucle continuo de forma automática. Funciona sin conexión a internet tras la carga inicial.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FORMATS -->
+<section id="formatos">
+  <div class="section-inner">
+    <p class="section-eyebrow">Formatos soportados</p>
+    <h2 class="section-title">Compatibilidad amplia</h2>
+    <p class="section-sub">Los formatos más comunes del mercado — documentos, imágenes y video sin conversiones previas.</p>
+
+    <div class="formats-grid">
+
+      <div class="format-block doc">
+        <div class="format-block-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <div class="format-block-title">Documento</div>
+        <div class="format-pills">
+          <span class="format-pill">PDF</span>
+        </div>
+      </div>
+
+      <div class="format-block img">
+        <div class="format-block-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <div class="format-block-title">Imagen</div>
+        <div class="format-pills">
+          <span class="format-pill">JPG</span>
+          <span class="format-pill">PNG</span>
+          <span class="format-pill">WebP</span>
+          <span class="format-pill">GIF</span>
+          <span class="format-pill">BMP</span>
+        </div>
+      </div>
+
+      <div class="format-block vid">
+        <div class="format-block-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        </div>
+        <div class="format-block-title">Video</div>
+        <div class="format-pills">
+          <span class="format-pill">MP4</span>
+          <span class="format-pill">MKV</span>
+          <span class="format-pill">MOV</span>
+          <span class="format-pill">AVI</span>
+          <span class="format-pill">WebM</span>
+          <span class="format-pill">3GP</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- NAVIGATION -->
+<section id="navegacion">
+  <div class="section-inner" style="text-align:center;">
+    <p class="section-eyebrow">Navegación táctil</p>
+    <h2 class="section-title">Avanza con un toque</h2>
+    <p class="section-sub" style="margin: 0 auto 48px;">Toca el lado izquierdo o derecho de la pantalla para navegar entre slides sin necesidad de gestos complejos.</p>
+
+    <div class="nav-demo">
+      <div class="nav-demo-screen">
+        <div class="nav-demo-half">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Anterior
+        </div>
+        <div class="nav-demo-sep"></div>
+        <div class="nav-demo-half">
+          Siguiente
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </div>
+      <div class="nav-demo-labels">
+        <div class="nav-demo-label">
+          <strong>Mitad izquierda</strong>
+          <span>Toca para ir al anterior</span>
+        </div>
+        <div class="nav-demo-label">
+          <strong>Mitad derecha</strong>
+          <span>Toca para ir al siguiente</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-brand-mark"></div>
+      ZenScreen
+      <span class="footer-version">v1.1.0</span>
+    </div>
+    <div class="footer-links">
+      <a href="#caracteristicas">Características</a>
+      <a href="docs.html">Documentación</a>
+      <a href="https://github.com/sevillawil8/zenscreen" target="_blank" rel="noopener">GitHub</a>
+      <span style="color:var(--muted)">MIT License</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const slides = ['s0','s1','s2'];
+  const dots   = ['d0','d1','d2'];
+  const tags   = ['Imagen · 1 de 3', 'PDF · Página 1', 'Video · 00:18'];
+  let cur = 0;
+
+  function next() {
+    document.getElementById(slides[cur]).classList.remove('active');
+    document.getElementById(dots[cur]).classList.remove('active');
+
+    const prog = document.getElementById('prog');
+    prog.style.transition = 'none';
+    prog.style.width = '0%';
+
+    cur = (cur + 1) % slides.length;
+
+    document.getElementById(slides[cur]).classList.add('active');
+    document.getElementById(dots[cur]).classList.add('active');
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        prog.style.transition = 'width 2.8s linear';
+        prog.style.width = '100%';
+      });
+    });
+  }
+
+  // Kick off first progress bar
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const prog = document.getElementById('prog');
+      prog.style.transition = 'width 2.8s linear';
+      prog.style.width = '100%';
+    });
+  });
+
+  setInterval(next, 2800);
+</script>
+</body>
+</html>
